@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SAO Office Hour Login</title>
+
+</head>
+<body>
+<center>
+<h3>Login to the Office Hour System!</h3>
+Not yet registered? Reach out to Sophia, Era, or Anindit!</a>
+<p>
+<form action = "/login"; method = "post";>
+	<table style = 'center'>
+        <tr>
+            <td>Username: </td>
+            <td><input type="text" name="username"></input></td>
+        </tr>
+        <tr>
+            <td>Password: </td>
+            <td><input type="text" name="password"></input></td>
+        </tr>    
+    </table>
+    <input type="submit" value="Log In"></input>
+</form>
+</p>
+<p>
+{% with messages = get_flashed_messages() %}
+   {% if messages %}
+      {% for message in messages %}
+        <font color="red"> {{ message }} </font>
+      {% endfor %}
+   {% endif %}
+{% endwith %}
+</p>
+</center>
+</body>
+</html>
