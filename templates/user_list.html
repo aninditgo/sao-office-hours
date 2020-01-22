@@ -27,18 +27,19 @@
         <form action = "/try_deleting_users"; method = "post">
 		<table id= "user_list_table">
         	<tr>
-            	<th onclick="sortTable(0)"></th>
-				<th onclick="sortTable(1)">Username</th>
+            	  <th onclick="sortTable(0)"></th>
+				        <th onclick="sortTable(1)">Username</th>
                 <th onclick="sortTable(2)">Password</th>
-                <th onclick="sortTable(3)">Standing</th>
-                <th onclick="sortTable(4)">Preferences Set?</th>
+                <th onclick="sortTable(3)">Division</th>
+                <th onclick="sortTable(4)">Standing</th>
+                <th onclick="sortTable(5)">Preferences Set?</th>
                 <th>Assigned Office Hours</th>
                
             </tr>
             {% for user in user_list %}
             <tr>
                 <td><input type="checkbox" name="users_to_delete" value= {{ user[0] }}></td>
-                {% for i in range(5) %}
+                {% for i in range(6) %}
                 <td>{{ user[i] }}</td>
                 {% endfor %}
             </tr>

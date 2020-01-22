@@ -24,19 +24,26 @@ class User(db.Model):
     username = db.Column(db.String(120), primary_key=True)
     password = db.Column(db.String(120))
     name = db.Column(db.String(120))
-    
+
+    #see below for possible divisions
+    division = db.Column(db.String(120))
+    CONDUCT = "conduct"
+    ACADEMIC = "academic"
+    FIN_AID = "fincial aid"
+    GRIEVANCE = "grievance"
+    NOT_APPLICABLE = "n/a"    
     #see below for the possible types
-    user_type = db.Column(db.Integer)
-    INACTIVE = 0
-    NEW_ACTIVE = 1
-    ACTIVE = 2
-    VETERAN_ACTIVE = 3
+    standing = db.Column(db.String(120))
+    INACTIVE = 'inactive'
+    NEW_HIRE = 'new_hire'
+    CASEWORKER = 'caseworker'
+    VETERAN = 'veteran'
 
     #There are 70 office hour slots, so we have an array with 70 entries. See below for possible value of each entry
     office_hour_input = db.Column(db.ARRAY(db.Integer))
     NO_PREFERENCE = 0
     PREFERRED = 1
-    UNAVAILABLE = -1
+    UNAVAILABLE = 2
 
     #There are 70 office hour slots, this will have the 6 assigned slots
     NUM_ASSIGNED_SLOTS = 6
@@ -46,10 +53,11 @@ class User(db.Model):
     def __init__(self, username, password, name="name"):
         self.username = username
         self.password = password
-        self.user_type = User.INACTIVE
+        self.standing = User.INACTIVE
         self.office_hour_input = [User.NO_PREFERENCE for _ in range(TOTAL_OFFICE_HOUR_SLOTS)]
         self.assigned_office_hours = [User.UNASSIGNED for _ in range(User.NUM_ASSIGNED_SLOTS)]
         self.name = name
+        self.division = User.NOT_APPLICABLE
 #db.drop_all()
 db.create_all()
 
@@ -124,16 +132,9 @@ def user_list():
         user_list_for_html = []
         user_list_classform = db.session.query(User).all()
         for user in user_list_classform:
-            standing = 'inactive'
-            if (user.user_type == User.NEW_ACTIVE):
-                standing = 'new hire'
-            elif (user.user_type == User.ACTIVE):
-                standing = 'caseworker'
-            elif (user.user_type == User.VETERAN_ACTIVE):
-                standing = 'veteran'
             office_hour_preferences = 'no' if sum(user.office_hour_input) == 0 else 'yes'
             office_hour_assignments = 'not yet assigned' if -1 in user.assigned_office_hours else 'coming soon'
-            user_list_for_html.append([user.username, user.password, standing, office_hour_preferences, office_hour_assignments])
+            user_list_for_html.append([user.username, user.password, user.division, user.standing, office_hour_preferences, office_hour_assignments])
         
         return render_template('user_list.html', user_list = user_list_for_html)
     else:
@@ -196,6 +197,31 @@ def try_changing_password(username):
         else: 
             flash ("Entered the wrong Old Password.")
         return redirect("/change_password&=" + username)
+    return automatic_logout()
+
+@app.route('/edit_profile&=<username>')
+def edit_profile(username):
+    if session.get('user') == username or True:
+        if db.session.query(User).filter(User.username == username).count():
+            cur_user = db.session.query(User).filter(User.username == username).one()
+            radio_standing_order = [User.INACTIVE, User.NEW_HIRE, User.CASEWORKER, User.VETERAN]
+            radio_standing = ['checked' if cur_user.standing == standing else '' for standing in radio_standing_order]
+            radio_division_order = [User.NOT_APPLICABLE, User.CONDUCT, User.GRIEVANCE, User.ACADEMIC, User.FIN_AID]
+            radio_division = ['checked' if cur_user.division == division else '' for division in radio_division_order]
+        return render_template('edit_profile.html', username=username, radio_standing=radio_standing, radio_division=radio_division)
+    return automatic_logout()
+
+@app.route('/try_editing_profile&=<username>', methods = ['POST'])
+def try_editing_profile(username):
+    if session.get('user') == username or True:
+        if db.session.query(User).filter(User.username == username).count():
+            db.session.rollback()
+            cur_user = db.session.query(User).filter(User.username == username).one()
+            cur_user.standing = request.form['standing']
+            cur_user.division = request.form['division']
+            db.session.commit()
+            flash("Successfully Saved!")
+        return redirect("/edit_profile&=" + username)
     return automatic_logout()
 
 @app.route('/')

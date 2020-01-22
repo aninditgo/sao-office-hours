@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Reset System</title>
+    </head>
+    <body>
+    <center>
+    <h3>Edit Profile</h3>
+    </center>
+    <form action = "/try_editing_profile&={{ username }}"; method = "post";>
+    <p>
+        <b> Edit Standing </b><br>
+            <input type="radio" name="standing" value='inactive' {{ radio_standing[0] }}> Inactive<br>
+            <input type="radio" name="standing" value='new hire' {{ radio_standing[1] }}> New Hire<br>
+            <input type="radio" name="standing" value='caseworker' {{ radio_standing[2] }}> Caseworker<br>
+            <input type="radio" name="standing" value='veteran' {{ radio_standing[3] }}> Veteran<br>
+    </p>
+    <p>
+        <b> Edit Division </b><br>
+            <input type="radio" name="division" value='n/a' {{ radio_division[0] }}>N/A<br>
+            <input type="radio" name="division" value='conduct' {{ radio_division[1] }}>Conduct<br>
+            <input type="radio" name="division" value='grievance' {{ radio_division[2] }}>Grievance<br>
+            <input type="radio" name="division" value='academic' {{ radio_division[3] }}> Academic<br>
+            <input type="radio" name="division" value='fincial aid' {{ radio_division[4] }}>Financial Aid<br>
+    </p>
+    <p><input type="submit" value="Save Changes" style="font-size:30px; width:200px"></input></p>
+    </form>    	
+<p>
+{% with messages = get_flashed_messages() %}
+   {% if messages %}
+      {% for message in messages %}
+        {%if "Success"  in message%}
+            <font color="green"> {{ message }} </font> <br>
+        {% else %}
+            <font color="red"> {{ message }} </font> <br>
+        {% endif %}
+      {% endfor %}
+   {% endif %}
+{% endwith %}
+</p>
+<center>
+<p>
+        <a href="/user&={{ username }}" style="color:blue">Back to User Panel</a><br/>
+        <a href="/logout" style="color:blue">Log out</a>
+        </p>
+    </center>
+    </body>
+   
+</html>
