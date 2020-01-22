@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Reset System</title>
+    </head>
+    <body>
+    <center>
+    	<h3>Reset the System</h3>
+        This is not a joke. It cannot be undone, so think very carefully about if you'd like to do this. <br/>
+        If you do this, you will remove every account from the system, and all office-wide statistics that have been collected.<br/>
+        If you'd like to continue, enter the admin username and password and press reset.
+        <p>
+        <form action = "/try_reset"; method = "post";>
+            <table style = 'center'>
+                <tr>
+                    <td>Username: </td>
+                    <td><input type="text" name="username"></input></td>
+                </tr>
+                <tr>
+                    <td>Password: </td>
+                    <td><input type="password" name="password"></input></td>
+                </tr>    
+            </table>
+            <input type="submit" value="Reset System" onclick="return confirm('Are you absolutely, 100%, swear on your mothers life, no, your mothers mothers life, sure that you want to reset?' )"></input>
+        </form>
+        </p>
+        <p>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <font color="red"> {{ message }} </font>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+        </p>
+        <p>
+            <a href="/admin" style="color:blue">Back to Admin Panel</a><br/>
+            <a href="/logout" style="color:blue"">Log out</a>
+        </p>
+    </center>
+    </body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Enter Users</title>
+    </head>
+    <body>
+    	<h3> Add New Users: </h3>
+        Enter the new users in the following format:
+        <p>
+        user1, pass1 <br/>
+        user2, pass2 
+        </p>
+        Make sure to put the username, followed with a comma, followed with the password. Don't worry about whitespace on the end of the line/between words, it will be trimmed.<br/>
+        Make sure to make a new line for each user. The form will tell you if there were formatting issues and if the input was succesful. You should double check to see if they were added.<br/>
+        I would recommend making a text document with the input correctly formatted, then copy/pasting it here. This will make life easier if something goes wrong, since the text will dissapear after submission.
+        <p>
+        	<b> Enter new users here:</b>
+            <form action = "/try_adding_users"; method = "post">
+              <textarea rows="20" cols="50" name="new_users_text"></textarea><br>
+              <input type="submit" value="Submit">
+            </form>
+        </p>
+        <p>
+            {% with messages = get_flashed_messages() %}
+               {% if messages %}
+                  {% for message in messages %}
+                    {%if "Success"  in message%}
+                        <font color="green"> {{ message }} </font> <br>
+                    {% else %}
+                        <font color="red"> {{ message }} </font> <br>
+                    {% endif %}
+                  {% endfor %}
+               {% endif %}
+            {% endwith %}
+        </p>
+        <center>
+            <a href="/user_list" style="color:blue">View User List</a><br/>
+        	<a href="/admin" style="color:blue">Back to Admin Panel</a><br/>
+            <a href="/logout" style="color:blue">Log out</a>
+        </center>
+    </body>
+</html>
+

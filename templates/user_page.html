@@ -5,8 +5,12 @@
     </head>
     <body>
         <center>
-            <h3>Hi User!</h3>
-            <a href="/logout">Log out</a>
+            <h3>Hi {{ username }}!</h3>
+            <p>
+                <a href="/change_password&={{ username }}" style="color:blue""> Change Password</a> <br/>
+                <a href="/" style="color:blue">Edit Profile</a><br/>
+            </p>
+            <a href="/logout" style="color:blue" >Log out</a>
         </center>
     </body>
 </html>
