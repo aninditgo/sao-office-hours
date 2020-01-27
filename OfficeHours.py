@@ -1,12 +1,14 @@
 import os, datetime, string 
 from flask import Flask, render_template, request, redirect, flash, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_heroku import Heroku
 import csv
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
-app.config['SQLALCHEMY_ECHO'] = True
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
+#app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
+heroku = Heroku(app)
 db = SQLAlchemy(app)
 
 
