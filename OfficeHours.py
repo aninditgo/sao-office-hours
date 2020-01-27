@@ -39,11 +39,12 @@ OFFICE_SIGNIN_LOCK = False
 
 class StatsCollection(db.Model):
     __tablename__ = "stats_collection"
-    id = db.Column(db.Integer, primary_key = True)
+    singout_time = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(120))
-    logged_time = db.Column(db.Integer)
-    def __init__(self, username, logged_time):
+    logged_time = db.Column(db.String(120))
+    def __init__(self, username, signout_time, logged_time):
         self.username=username
+        self.signout_time = signout_time
         self.logged_time=logged_time
 
 class SignedInDb(db.Model):
@@ -176,7 +177,7 @@ def signout(username):
     completed_hours = current_hour - signed_out.sign_in_time/100
     completed_hours_text = int(completed_hours)
     completed_minutes_text = int(60*(completed_hours - completed_hours_text))
-    db.session().add(StatsCollection(username, int(100*completed_hours)))
+    db.session().add(StatsCollection(username, str(cur_time), int(100*completed_hours)))
     db.session.commit()
     flash("Signed out: " + username + ", for " + str(completed_hours_text) + " hours and " + str(completed_minutes_text) + " minutes. ")
     return redirect('/office')
