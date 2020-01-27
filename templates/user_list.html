@@ -25,22 +25,37 @@
       <center>
         <h3>Current User List</h3>
         <form action = "/try_deleting_users"; method = "post">
-		<table id= "user_list_table">
+		    <table id= "user_list_table">
         	<tr>
-            	  <th onclick="sortTable(0)"></th>
-				        <th onclick="sortTable(1)">Username</th>
-                <th onclick="sortTable(2)">Password</th>
-                <th onclick="sortTable(3)">Division</th>
-                <th onclick="sortTable(4)">Standing</th>
-                <th onclick="sortTable(5)">Preferences Set?</th>
-                <th>Assigned Office Hours</th>
-               
+                <th></th>
+                {%for i in range (table_headings|length) %}
+                  <th onclick="sortTable({{ i+1 }})">{{ table_headings[i] }}</th>
+                {%endfor%}
             </tr>
             {% for user in user_list %}
             <tr>
                 <td><input type="checkbox" name="users_to_delete" value= {{ user[0] }}></td>
-                {% for i in range(6) %}
-                <td>{{ user[i] }}</td>
+                {% for i in range(user|length) %}
+                  <td>
+                    {% if i==0 %}
+                      <a href="/user&={{ user[0] }}" style="color:blue")">{{ user[i] }}</a>
+                    
+                    {% elif i==1 and user[i] != default_password %}
+                        <a href="/try_resetting_password&={{ user[0] }}" style="color:blue" onclick="return confirm('Are you sure you want to reset password?')">Reset Password</a>
+                   
+                    {% elif i==4 %}
+                        <a href="/edit_profile&={{ user[0] }}" style="color:blue")">{{ user[i] }}</a>
+                    
+                    {% elif i==5 %}
+                        <a href="/edit_required_hours&={{ user[0] }}" style="color:blue")">{{ user[i] }}</a>
+                    
+                    {% elif i==7 %}
+                        <a href="/set_magic_key&={{ user[0] }}" style="color:blue")">{{ user[i] }}</a>
+
+                    {% else %}
+                      {{ user[i] }}
+                    {% endif %}
+                  </td>
                 {% endfor %}
             </tr>
             {% endfor %}
@@ -71,6 +86,7 @@
     <script>
       function sortTable(n) {
         var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+        console.log(n)
         table = document.getElementById("user_list_table");
         switching = true;
         // Set the sorting direction to ascending:
@@ -93,13 +109,13 @@
             /* Check if the two rows should switch place,
             based on the direction, asc or desc: */
             if (dir == "asc") {
-              if ((n > 0 && x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) || (n==0 && !x.checked && y.checked)) {
+              if ((n > 0 && x.innerText.toLowerCase() > y.innerText.toLowerCase()) || (n==0 && !x.checked && y.checked)) {
                 // If so, mark as a switch and break the loop:
                 shouldSwitch = true;
                 break;
               }
             } else if (dir == "desc") {
-              if ((n>0 && x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) || (n==0 && x.checked && !y.checked)) {
+              if ((n>0 && x.innerText.toLowerCase() < y.innerText.toLowerCase()) || (n==0 && x.checked && !y.checked)) {
                 // If so, mark as a switch and break the loop:
                 shouldSwitch = true;
                 break;

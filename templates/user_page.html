@@ -9,8 +9,15 @@
             <p>
                 <a href="/change_password&={{ username }}" style="color:blue""> Change Password</a> <br/>
                 <a href="/edit_profile&={{ username }}" style="color:blue">Edit Profile</a><br/>
+                <a href="/set_magic_key&={{ username }}" style="color:blue">Set Magic Key</a><br/>
+
             </p>
-            <a href="/logout" style="color:blue" >Log out</a>
+            {%if admin %}
+                <a href="/user_list" style="color:blue" >Back to User List (Admin Only) </a><br>
+                <a href="/logout" style="color:blue" >Log out (Admin) </a>
+            {% else %}
+                <a href="/logout" style="color:blue" >Log out</a>
+            {% endif %}
         </center>
     </body>
 </html>
