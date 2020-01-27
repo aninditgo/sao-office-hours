@@ -1,1 +1,1 @@
-web: guinicorn OfficeHours:app
+web: gunicorn OfficeHours:app
