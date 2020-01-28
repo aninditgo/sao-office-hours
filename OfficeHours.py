@@ -9,7 +9,7 @@ app.secret_key = 'onedayiwillprogramandtherewontbebugs'
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
 #app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
-heroku = Heroku(app)
+#heroku = Heroku(app)
 db = SQLAlchemy(app)
 
 
@@ -52,8 +52,8 @@ flash_messages = Messages()
 
 class StatsCollection(db.Model):
     __tablename__ = "stats_collection"
-    signout_time = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(120))
+    signout_time = db.Column(db.String(120), primary_key = True)
     logged_time = db.Column(db.String(120))
     def __init__(self, username, signout_time, logged_time):
         self.username=username
@@ -120,7 +120,6 @@ class User(db.Model):
         self.division = User.NOT_APPLICABLE
         self.magic_key = User.DEFAULT_MAGIC_KEY
 
-db.drop_all()
 db.create_all()
 
 def clear_user_session():
