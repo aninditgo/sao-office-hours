@@ -76,10 +76,10 @@ class User(db.Model):
     NOT_APPLICABLE = "N/A"    
     #see below for the possible types
     standing = db.Column(db.String(120))
-    INACTIVE = 'Inactive'
-    NEW_HIRE = 'New Hire'
-    CASEWORKER = 'Caseworker'
-    VETERAN = 'Veteran'
+    INACTIVE = '4. Inactive'
+    NEW_HIRE = '1. New Hire'
+    CASEWORKER = '2. Caseworker'
+    VETERAN = '3. Veteran'
 
     #There are 70 office hour slots, so we have an array with 70 entries. See below for possible value of each entry
     office_hour_input = db.Column(db.ARRAY(db.String(120), dimensions = 2))
@@ -366,7 +366,7 @@ def edit_profile(username):
         cur_user = db.session.query(User).filter(User.username == username).one()
         radio_preferencebox_order = [User.UNAVAILABLE, User.AVAILABLE, User.PREFERRED]
         radio_preferencebox_settings = [[['checked' if user_selection == selection  else '' for selection in radio_preferencebox_order] for user_selection in row_input] for row_input in cur_user.office_hour_input]
-        radio_standing_order = [User.INACTIVE, User.NEW_HIRE, User.CASEWORKER, User.VETERAN]
+        radio_standing_order = [User.NEW_HIRE, User.CASEWORKER, User.VETERAN, User.INACTIVE]
         radio_standing = ['checked' if cur_user.standing == standing else '' for standing in radio_standing_order]
         radio_division_order = [User.NOT_APPLICABLE, User.CONDUCT, User.GRIEVANCE, User.ACADEMIC, User.FIN_AID]
         radio_division = ['checked' if cur_user.division == division else '' for division in radio_division_order]

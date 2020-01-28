@@ -16,7 +16,7 @@
             }
             td {
               font-size:10px;
-              width: 75px;
+              width: 83px;
             }
             </style>
     <body>
@@ -27,7 +27,7 @@
         <form action = "/try_editing_profile&={{ username }}"; method = "post"; id = "edits_to_profile">
             <b>Edit Office Hour Preferences</b><br>
             To make this easier for everyone, please only put "unavailable" for times you are really, truly unavailable (class, meetings, etc). The admin can see how many unavailable slots you put!<br>
-            Also, try not to put more than 10 "preferred" slots (5 hours)<br>
+            Also, it's best if you put between n and n+2 preferred slots, where n is the number of <i>slots</i> you have to do<br>
             Be sure to press save changes when you are done. 
             <p>
                 <table id = "preference_table">
@@ -52,7 +52,7 @@
                 </table>
             </p>
             <p>
-                <b> Edit Standing </b><br>
+                <b> Edit Standing (Veteran means more than 3 active semesters) </b><br>
                     <input type="radio" name="standing" value='{{ radio_standing_order[0] }}' {{ radio_standing[0] }}> {{ radio_standing_order[0] }}<br>
                     <input type="radio" name="standing" value='{{ radio_standing_order[1] }}' {{ radio_standing[1] }}> {{ radio_standing_order[1] }}<br>
                     <input type="radio" name="standing" value='{{ radio_standing_order[2] }}' {{ radio_standing[2] }}> {{ radio_standing_order[2] }}<br>
