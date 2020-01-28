@@ -6,10 +6,9 @@ import csv
 
 app = Flask(__name__)
 app.secret_key = os.urandom(12)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
-app.config['SQLALCHEMY_ECHO'] = True
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
+#app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
-#heroku = Heroku(app)
 db = SQLAlchemy(app)
 
 
@@ -37,6 +36,18 @@ OFFICE_USERNAME = 'office'
 OFFICE_PASSWORD = 'sp1ndoctor'
 
 OFFICE_SIGNIN_LOCK = False
+
+class Messages:
+    def __init__(self):
+        self.messages = []
+    def pop_messages(self):
+        temp = self.messages
+        self.messages = []
+        return temp
+    def append_message(self, message):
+        self.messages.append(message)
+
+flash_messages = Messages()
 
 class StatsCollection(db.Model):
     __tablename__ = "stats_collection"
@@ -108,15 +119,7 @@ class User(db.Model):
         self.division = User.NOT_APPLICABLE
         self.magic_key = User.DEFAULT_MAGIC_KEY
 
-db.drop_all()
 db.create_all()
-
-def append_message(*session, message):
-    if 'message' in session and type (session.get('message') == list):
-        session['message'].append(message)
-    else:
-        session['message'] = [message]
-    print (session['message'])
 
 def clear_user_session():
     logged_out_user = session.pop('user', None)
@@ -127,7 +130,7 @@ def clear_user_session():
 
 
 def automatic_logout():
-    append_message(session, "You are signed in to the wrong acount for that")
+    flash_messages.append_message( "You are signed in to the wrong acount for that")
     return redirect('/')
 
 @app.route('/admin')
@@ -141,8 +144,7 @@ def admin():
 def office():
     if session.get('user') == OFFICE_USERNAME:
         signed_in_list_classform = db.session.query(SignedInDb).all()
-        messages = session.pop('messages', [])
-        return render_template('office.html', signed_in_users = [signed_in.username for signed_in in signed_in_list_classform], messages = messages)
+        return render_template('office.html', signed_in_users = [signed_in.username for signed_in in signed_in_list_classform], messages=flash_messages.pop_messages())
     return automatic_logout()
 
 @app.route('/handle_signins', methods = ['POST'])
@@ -162,10 +164,10 @@ def handle_signins():
                 db.session.rollback()
                 db.session.add(SignedInDb(input_user))
                 db.session.commit()
-                append_message(session, "Signed in: " + input_user)
+                flash_messages.append_message( "Signed in: " + input_user)
                 return redirect('/office')
         else :
-            append_message(session, 'Invalid Sign-In')
+            flash_messages.append_message( 'Invalid Sign-In')
             return redirect('/office')
     return automatic_logout()
 
@@ -192,7 +194,7 @@ def signout(username):
         completed_minutes_text = int(60*(completed_hours - completed_hours_text))
         db.session().add(StatsCollection(username, str(cur_time), int(100*completed_hours)))
         db.session.commit()
-        append_message(session, "Signed out: " + username + ", for " + str(completed_hours_text) + " hours and " + str(completed_minutes_text) + " minutes. ")
+        flash_messages.append_message( "Signed out: " + username + ", for " + str(completed_hours_text) + " hours and " + str(completed_minutes_text) + " minutes. ")
         return redirect('/office')
     return automatic_logout
 
@@ -206,8 +208,7 @@ def kick_stragglers():
 @app.route('/add_users')
 def add_users():
     if session.get('user') == ADMIN_USERNAME:
-        messages = session.pop('messages', [])
-        return render_template('add_users.html', messages=messages)
+        return render_template('add_users.html', messages=flash_messages.pop_messages())
     return automatic_logout()
 
 @app.route('/try_adding_users', methods = ['POST'])
@@ -220,18 +221,18 @@ def try_adding_users():
             for username_unstripped in new_users_lines:
                 username=username_unstripped.translate({ord(c): None for c in string.whitespace})
                 if db.session.query(User).filter(User.username == username).count():
-                    append_message(session, "<"+username_unstripped + "> already exists in the database. Nothing was written for this line.")
+                    flash_messages.append_message( "<"+username_unstripped + "> already exists in the database. Nothing was written for this line.")
                 elif ',' in username:
-                    append_message(session, "<"+username_unstripped + "> had a comma in it - illegal formatting!")
+                    flash_messages.append_message( "<"+username_unstripped + "> had a comma in it - illegal formatting!")
                 else:
                     user = User(username)
                     db.session.add(user)
                     something_to_write = True
             if something_to_write:
                 db.session.commit()
-                append_message(session, "Successfully wrote something to the database!!")               
+                flash_messages.append_message( "Successfully wrote something to the database!!")               
         else :
-            append_message(session, "Please enter something!")
+            flash_messages.append_message( "Please enter something!")
         return redirect('/add_users')
     return automatic_logout()
 
@@ -249,8 +250,7 @@ def user_list():
                         num_unavailable_hours+=1
             office_hour_assignments = 'not yet assigned' if -1 in user.assigned_office_hours else 'coming soon'
             user_list_for_html.append([user.username, user.password, user.division, user.standing, num_unavailable_hours, user.required_slots*SLOT_DURATION_HOURS, office_hour_assignments, user.magic_key])
-        messages = session.pop('messages', [])
-        return render_template('user_list.html', messages = messages, table_headings = USER_LIST_TABLE_HEADINGS, user_list = user_list_for_html, default_password = User.DEFAULT_PASSWORD)
+        return render_template('user_list.html', messages=flash_messages.pop_messages(), table_headings = USER_LIST_TABLE_HEADINGS, user_list = user_list_for_html, default_password = User.DEFAULT_PASSWORD)
     return automatic_logout()
 
 @app.route('/try_deleting_users', methods = ['POST'])
@@ -264,15 +264,14 @@ def try_deleting_users():
             db.session.query(User).filter(User.username == username).delete()
             db.session.commit()
         if selected:
-            append(session, "Successfully deleted: " + deleted_string[:-2])
+            flash_messages.append_message("Successfully deleted: " + deleted_string[:-2])
         return redirect('/user_list')
     return automatic_logout()
 
 @app.route('/reset_system')
 def reset_system():
     if session.get('user') == ADMIN_USERNAME:
-        messages = session.pop('messages', [])
-        return render_template('reset_system.html', messages=messages)
+        return render_template('reset_system.html', messages=flash_messages.pop_messages())
     return automatic_logout()
 
 @app.route('/try_reset', methods = ['POST'])
@@ -283,9 +282,9 @@ def try_reset():
         if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
             StatsCollection.__table__.drop(db.engine)
             StatsCollection.__table__.create(db.engine)
-            append_message(session, "System has been reset!")
+            flash_messages.append_message( "System has been reset!")
         else:
-            append_message(session, "Invalid Credentials! Also think again.")
+            flash_messages.append_message( "Invalid Credentials! Also think again.")
         return redirect('/reset_system')
     return automatic_logout()
 
@@ -298,8 +297,7 @@ def user_page(username):
 @app.route('/change_password&=<username>')
 def change_password(username):
     if session.get('user') == username or session.get('user') == ADMIN_USERNAME:
-        messages = session.pop('messages', [])
-        return render_template('change_password.html', username=username, admin = session.get('user') == ADMIN_USERNAME, messages=messages)
+        return render_template('change_password.html', username=username, admin = session.get('user') == ADMIN_USERNAME, messages=flash_messages.pop_messages())
     return automatic_logout()
 
 @app.route('/try_resetting_password&=<username>')
@@ -308,7 +306,7 @@ def try_resetting_password(username):
         db.session.rollback()
         db.session.query(User).filter(User.username == username).one().password = User.DEFAULT_PASSWORD
         db.session.commit()
-        append_message(session, "Successfuly reset <" + username + "> password")
+        flash_messages.append_message( "Successfuly reset <" + username + "> password")
     return redirect('/user_list')
 
 
@@ -319,19 +317,18 @@ def try_changing_password(username):
             if request.form['new_pass'] == request.form['new_pass_x2']:
                 db.session.query(User).filter(User.username == username).one().password = request.form['new_pass']
                 db.session.commit()
-                append_message(session, "Successfully changed password!")
+                flash_messages.append_message( "Successfully changed password!")
             else:
-                append_message(session, "Your 2 new passwords don't match.")
+                flash_messages.append_message( "Your 2 new passwords don't match.")
         else: 
-            append_message("Entered the wrong Old Password.")
+            flash_messages.append_message("Entered the wrong Old Password.")
         return redirect("/change_password&=" + username)
     return automatic_logout()
 
 @app.route('/set_magic_key&=<username>')
 def set_magic_key(username):
     if session.get('user') == username or session.get('user') == ADMIN_USERNAME:
-        messages = session.pop('messages', [])
-        return render_template('set_magic_key.html', username=username, admin = session.get('user') == ADMIN_USERNAME, messages=messages)
+        return render_template('set_magic_key.html', username=username, admin = session.get('user') == ADMIN_USERNAME, messages=flash_messages.pop_messages())
     return automatic_logout()
 
 @app.route('/try_setting_magic_key&=<username>', methods = ['POST'])
@@ -339,15 +336,14 @@ def try_setting_magic_key(username):
     if (session.get('user') == username or True) and db.session.query(User).filter(User.username == username).count():
         db.session.query(User).filter(User.username == username).one().magic_key = request.form['magic_key']
         db.session.commit()
-        append_message(session, "Successfully set Magic Key!")
+        flash_messages.append_message( "Successfully set Magic Key!")
         return redirect("/set_magic_key&=" + username)
     return automatic_logout()
 
 @app.route('/edit_required_hours&=<username>')
 def edit_required_hours(username):
     if (session.get('user') == ADMIN_USERNAME) and db.session.query(User).filter(User.username == username).count():
-        messages = session.pop('messages', [])
-        return render_template('edit_required_hours.html', messages=messages, username = username, 
+        return render_template('edit_required_hours.html', messages=flash_messages.pop_messages(), username = username, 
                                                             current_slot_duration = SLOT_DURATION_HOURS,
                                                             current_required_hours = db.session.query(User).filter(User.username == username).one().required_slots*SLOT_DURATION_HOURS)
     return automatic_logout()
@@ -359,9 +355,9 @@ def try_editing_required_hours(username):
         if int (new_slots) == new_slots:
             db.session.query(User).filter(User.username == username).one().required_slots = new_slots 
             db.session.commit()
-            append_message(session, "Successfully edited required hours!")
+            flash_messages.append_message( "Successfully edited required hours!")
         else :
-            append_message(session, "Required hour must be an integer multiple of slot duration!")
+            flash_messages.append_message( "Required hour must be an integer multiple of slot duration!")
         return redirect("/edit_required_hours&=" + username)
     return automatic_logout()
 
@@ -375,8 +371,7 @@ def edit_profile(username):
         radio_standing = ['checked' if cur_user.standing == standing else '' for standing in radio_standing_order]
         radio_division_order = [User.NOT_APPLICABLE, User.CONDUCT, User.GRIEVANCE, User.ACADEMIC, User.FIN_AID]
         radio_division = ['checked' if cur_user.division == division else '' for division in radio_division_order]
-        messages = session.pop('messages', [])
-        return render_template('edit_profile.html', messages=messages,
+        return render_template('edit_profile.html', messages=flash_messages.pop_messages(),
                                                     username=username, 
                                                     header_oh_slots = HEADER_OH_SLOTS,
                                                     days_open = DAYS_OPEN,
@@ -403,16 +398,14 @@ def try_editing_profile(username):
             cur_user.standing = request.form['standing']
             cur_user.division = request.form['division']
             db.session.commit()
-            append_message(session, "Successfully Saved!")
+            flash_messages.append_message( "Successfully Saved!")
         return redirect("/edit_profile&=" + username)
     return automatic_logout()
 
 @app.route('/')
 def home():
     if session.get('user') != OFFICE_USERNAME:
-        messages = session.pop('messages', [])
-        print(messages)
-        return render_template('login_form.html', messages=messages)
+        return render_template('login_form.html', messages=flash_messages.pop_messages())
     else:
         return render_template('office_logged_in.html')
 
@@ -430,7 +423,7 @@ def login():
         good_login = True
         global OFFICE_SIGNIN_LOCK
         if OFFICE_SIGNIN_LOCK:
-            append_message(session, "Sorry, it seems like another computer is tracking sign-ins. Sign out there first!")
+            flash_messages.append_message( "Sorry, it seems like another computer is tracking sign-ins. Sign out there first!")
             username=None
             good_login = False
         else :
@@ -444,7 +437,7 @@ def login():
         session['user'] = username
     else:
         print(session.get('messages'))
-        append_message(session, "Invalid Credentials!")
+        flash_messages.append_message( "Invalid Credentials!")
         print(session.get('messages'))
 
     return redirect(redirect_url)
