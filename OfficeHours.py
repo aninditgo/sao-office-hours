@@ -422,8 +422,7 @@ def login():
         good_login = True
         global OFFICE_SIGNIN_LOCK
         if OFFICE_SIGNIN_LOCK:
-            flash("Sorry, it seems like another computer is tracking sign-ins. Sign out there first!")
-            good_login = False
+            redirect_url = '/office'
         else :
             OFFICE_SIGNIN_LOCK = True
             redirect_url = '/office'
