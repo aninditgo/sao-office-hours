@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Enter Users</title>
+    </head>
+    <body>
+    	<h3> Add New Users: </h3>
+        Enter the new users in the following format:
+        <p>
+        user1<br/>
+        user2<br/> 
+        </p>
+        Please make a new line between each new user. All whitespace in a username will be removed. Don't include commas in usernames, the system will throw an error. 
+        <p>
+        	<b> Enter new users here:</b>
+            <form action = "/try_adding_users"; method = "post">
+              <textarea rows="20" cols="50" name="new_users_text"></textarea><br>
+              <input type="submit" value="Submit">
+            </form>
+        </p>
+        <p>
+            {% with messages = get_flashed_messages() %}
+               {% if messages %}
+                  {% for message in messages %}
+                    {%if "Success"  in message%}
+                        <font color="green"> {{ message }} </font> <br>
+                    {% else %}
+                        <font color="red"> {{ message }} </font> <br>
+                    {% endif %}
+                  {% endfor %}
+               {% endif %}
+            {% endwith %}
+        </p>
+        <center>
+            <a href="/user_list" style="color:blue">View User List</a><br/>
+        	<a href="/admin" style="color:blue">Back to Admin Panel</a><br/>
+            <a href="/logout" style="color:blue">Log out</a>
+        </center>
+    </body>
+</html>
+
