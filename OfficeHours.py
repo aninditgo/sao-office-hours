@@ -5,11 +5,11 @@ from flask_heroku import Heroku
 import csv
 
 app = Flask(__name__)
-app.secret_key = os.urandom(12)
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
-#app.config['SQLALCHEMY_ECHO'] = True
+app.secret_key = 'thishasbeenanafternoonofdoingnothing'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
+app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
-heroku = Heroku(app)
+#heroku = Heroku(app)
 db = SQLAlchemy(app)
 
 
@@ -40,7 +40,7 @@ OFFICE_SIGNIN_LOCK = False
 
 class StatsCollection(db.Model):
     __tablename__ = "stats_collection"
-    singout_time = db.Column(db.Integer, primary_key = True)
+    signout_time = db.Column(db.String(120), primary_key = True)
     username = db.Column(db.String(120))
     logged_time = db.Column(db.String(120))
     def __init__(self, username, signout_time, logged_time):
@@ -140,48 +140,56 @@ def office():
 
 @app.route('/handle_signins', methods = ['POST'])
 def handle_signins():
-    input_from_signin = request.form['username']
-    input_user = None
-    if db.session.query(User).filter(User.username == input_from_signin).count():
-        input_user = db.session.query(User).filter(User.username == input_from_signin).one().username
-    elif input_from_signin != User.DEFAULT_MAGIC_KEY and db.session.query(User).filter(User.magic_key == input_from_signin).count():
-        input_user = db.session.query(User).filter(User.magic_key == input_from_signin).one().username
-    
-    if input_user:
-        if db.session.query(SignedInDb).filter(SignedInDb.username == input_user).count():
-            return redirect('/signout&=' + input_user)
-        else:
-            db.session.rollback()
-            db.session.add(SignedInDb(input_user))
-            db.session.commit()
-            flash("Signed in: " + input_user)
+    if session.get('user') == OFFICE_USERNAME:
+
+        input_from_signin = request.form['username']
+        input_user = None
+        if db.session.query(User).filter(User.username == input_from_signin).count():
+            input_user = db.session.query(User).filter(User.username == input_from_signin).one().username
+        elif input_from_signin != User.DEFAULT_MAGIC_KEY and db.session.query(User).filter(User.magic_key == input_from_signin).count():
+            input_user = db.session.query(User).filter(User.magic_key == input_from_signin).one().username
+        
+        if input_user:
+            if db.session.query(SignedInDb).filter(SignedInDb.username == input_user).count():
+                return redirect('/signout&=' + input_user)
+            else:
+                db.session.rollback()
+                db.session.add(SignedInDb(input_user))
+                db.session.commit()
+                flash("Signed in: " + input_user)
+                return redirect('/office')
+        else :
+            flash('Invalid Sign-In')
             return redirect('/office')
-    else :
-        flash('Invalid Sign-In')
-        return redirect('/office')
+    return automatic_logout()
 
 @app.route('/signout_all')
 def signout_all():
-    signed_in_list_classform = db.session.query(SignedInDb).all()
-    for signed_in in signed_in_list_classform:
-        signout(signed_in.username)
-    return redirect('/office')
+    if session.get('user') == OFFICE_USERNAME:
+        signed_in_list_classform = db.session.query(SignedInDb).all()
+        for signed_in in signed_in_list_classform:
+            signout(signed_in.username)
+        return redirect('/office')
+    return automatic_logout()
 
 
 @app.route('/signout&=<username>')
 def signout(username):
-    db.session.rollback()
-    signed_out = db.session.query(SignedInDb).filter(SignedInDb.username == username).one()
-    db.session.query(SignedInDb).filter(SignedInDb.username == username).delete()
-    cur_time = datetime.datetime.now()
-    current_hour = cur_time.hour + cur_time.minute/60
-    completed_hours = current_hour - signed_out.sign_in_time/100
-    completed_hours_text = int(completed_hours)
-    completed_minutes_text = int(60*(completed_hours - completed_hours_text))
-    db.session().add(StatsCollection(username, str(cur_time), int(100*completed_hours)))
-    db.session.commit()
-    flash("Signed out: " + username + ", for " + str(completed_hours_text) + " hours and " + str(completed_minutes_text) + " minutes. ")
-    return redirect('/office')
+    if session.get('user') == OFFICE_USERNAME:
+
+        db.session.rollback()
+        signed_out = db.session.query(SignedInDb).filter(SignedInDb.username == username).one()
+        db.session.query(SignedInDb).filter(SignedInDb.username == username).delete()
+        cur_time = datetime.datetime.now()
+        current_hour = cur_time.hour + cur_time.minute/60
+        completed_hours = current_hour - signed_out.sign_in_time/100
+        completed_hours_text = int(completed_hours)
+        completed_minutes_text = int(60*(completed_hours - completed_hours_text))
+        db.session().add(StatsCollection(username, str(cur_time), int(100*completed_hours)))
+        db.session.commit()
+        flash("Signed out: " + username + ", for " + str(completed_hours_text) + " hours and " + str(completed_minutes_text) + " minutes. ")
+        return redirect('/office')
+    return automatic_logout()
 
 def kick_stragglers():
     db.session.query(SignedInDb).delete()
@@ -199,7 +207,7 @@ def add_users():
 
 @app.route('/try_adding_users', methods = ['POST'])
 def try_adding_users():
-    if session.get('user') == ADMIN_USERNAME or True:
+    if session.get('user') == ADMIN_USERNAME:
         new_users_text = request.form['new_users_text'].strip()
         if new_users_text:
             new_users_lines = new_users_text.splitlines()
@@ -227,7 +235,7 @@ def try_adding_users():
 
 @app.route('/user_list')
 def user_list():
-    if session.get('user') == ADMIN_USERNAME or True:
+    if session.get('user') == ADMIN_USERNAME:
         db.session.rollback()
         user_list_for_html = []
         user_list_classform = db.session.query(User).all()
@@ -246,26 +254,28 @@ def user_list():
 
 @app.route('/try_deleting_users', methods = ['POST'])
 def try_deleting_users():
-    selected = request.form.getlist('users_to_delete')
-    deleted_string = ''
-    db.session.rollback()
-    for username in selected :
-        deleted_string += username + ", "
-        db.session.query(User).filter(User.username == username).delete()
-        db.session.commit()
-    if selected:
-        flash("Successfully deleted: " + deleted_string[:-2])
-    return redirect('/user_list')
+    if session.get('user') == ADMIN_USERNAME:
+        selected = request.form.getlist('users_to_delete')
+        deleted_string = ''
+        db.session.rollback()
+        for username in selected :
+            deleted_string += username + ", "
+            db.session.query(User).filter(User.username == username).delete()
+            db.session.commit()
+        if selected:
+            flash("Successfully deleted: " + deleted_string[:-2])
+        return redirect('/user_list')
+    return automatic_logout()
 
 @app.route('/reset_system')
 def reset_system():
-    if session.get('user') == ADMIN_USERNAME or True:
+    if session.get('user') == ADMIN_USERNAME:
         return render_template('reset_system.html')
     return automatic_logout()
 
 @app.route('/try_reset', methods = ['POST'])
 def try_reset():
-    if session.get('user') == ADMIN_USERNAME or True:
+    if session.get('user') == ADMIN_USERNAME:
         username = request.form['username']
         password = request.form['password']
         if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
@@ -279,19 +289,19 @@ def try_reset():
 
 @app.route('/user&=<username>')
 def user_page(username):
-    if session.get('user') == username or True:
+    if session.get('user') == username or session.get('user') == ADMIN_USERNAME:
         return render_template('user_page.html', username=username, admin = session.get('user') == ADMIN_USERNAME)
     return automatic_logout()
 
 @app.route('/change_password&=<username>')
 def change_password(username):
-    if session.get('user') == username or True:
+    if session.get('user') == username or session.get('user') == ADMIN_USERNAME:
         return render_template('change_password.html', username=username, admin = session.get('user') == ADMIN_USERNAME)
     return automatic_logout()
 
 @app.route('/try_resetting_password&=<username>')
 def try_resetting_password(username):
-    if (session.get('user') == username or True) and db.session.query(User).filter(User.username == username).count():
+    if (session.get('user') == username or session.get('user') == ADMIN_USERNAME) and db.session.query(User).filter(User.username == username).count():
         db.session.rollback()
         db.session.query(User).filter(User.username == username).one().password = User.DEFAULT_PASSWORD
         db.session.commit()
@@ -301,7 +311,7 @@ def try_resetting_password(username):
 
 @app.route('/try_changing_password&=<username>', methods = ['POST'])
 def try_changing_password(username):
-    if session.get('user') == username or True:
+    if session.get('user') == username or session.get('user') == ADMIN_USERNAME:
         if db.session.query(User).filter(User.username == username).count() and db.session.query(User).filter(User.username == username).one().password == request.form['old_pass']:
             if request.form['new_pass'] == request.form['new_pass_x2']:
                 db.session.query(User).filter(User.username == username).one().password = request.form['new_pass']
@@ -316,13 +326,13 @@ def try_changing_password(username):
 
 @app.route('/set_magic_key&=<username>')
 def set_magic_key(username):
-    if session.get('user') == username or True:
+    if session.get('user') == username or session.get('user') == ADMIN_USERNAME:
         return render_template('set_magic_key.html', username=username, admin = session.get('user') == ADMIN_USERNAME)
     return automatic_logout()
 
 @app.route('/try_setting_magic_key&=<username>', methods = ['POST'])
 def try_setting_magic_key(username):
-    if (session.get('user') == username or True) and db.session.query(User).filter(User.username == username).count():
+    if (session.get('user') == username or session.get('user') == ADMIN_USERNAME) and db.session.query(User).filter(User.username == username).count():
         db.session.query(User).filter(User.username == username).one().magic_key = request.form['magic_key']
         db.session.commit()
         flash ("Successfully set Magic Key!")
@@ -331,7 +341,7 @@ def try_setting_magic_key(username):
 
 @app.route('/edit_required_hours&=<username>')
 def edit_required_hours(username):
-    if (session.get('user') == ADMIN_USERNAME or True) and db.session.query(User).filter(User.username == username).count():
+    if (session.get('user') == ADMIN_USERNAME) and db.session.query(User).filter(User.username == username).count():
         return render_template('edit_required_hours.html', username = username, 
                                                             current_slot_duration = SLOT_DURATION_HOURS,
                                                             current_required_hours = db.session.query(User).filter(User.username == username).one().required_slots*SLOT_DURATION_HOURS)
@@ -339,7 +349,7 @@ def edit_required_hours(username):
 
 @app.route('/try_editing_required_hours&=<username>', methods = ['POST'])
 def try_editing_required_hours(username):
-    if (session.get('user') == ADMIN_USERNAME or True) and db.session.query(User).filter(User.username == username).count():
+    if (session.get('user') == ADMIN_USERNAME) and db.session.query(User).filter(User.username == username).count():
         new_slots = float(request.form['required_hours'])/SLOT_DURATION_HOURS
         if int (new_slots) == new_slots:
             db.session.query(User).filter(User.username == username).one().required_slots = new_slots 
@@ -352,7 +362,7 @@ def try_editing_required_hours(username):
 
 @app.route('/edit_profile&=<username>')
 def edit_profile(username):
-    if (session.get('user') == username or True) and db.session.query(User).filter(User.username == username).count():
+    if (session.get('user') == username or session.get('user') == ADMIN_USERNAME) and db.session.query(User).filter(User.username == username).count():
         cur_user = db.session.query(User).filter(User.username == username).one()
         radio_preferencebox_order = [User.UNAVAILABLE, User.AVAILABLE, User.PREFERRED]
         radio_preferencebox_settings = [[['checked' if user_selection == selection  else '' for selection in radio_preferencebox_order] for user_selection in row_input] for row_input in cur_user.office_hour_input]
@@ -375,7 +385,7 @@ def edit_profile(username):
 
 @app.route('/try_editing_profile&=<username>', methods = ['POST'])
 def try_editing_profile(username):
-    if session.get('user') == username or True:
+    if session.get('user') == username or session.get('user') == ADMIN_USERNAME:
         if db.session.query(User).filter(User.username == username).count():
             db.session.rollback()
             cur_user = db.session.query(User).filter(User.username == username).one()
@@ -413,6 +423,7 @@ def login():
         global OFFICE_SIGNIN_LOCK
         if OFFICE_SIGNIN_LOCK:
             flash("Sorry, it seems like another computer is tracking sign-ins. Sign out there first!")
+            good_login = False
             username=None
         else :
             OFFICE_SIGNIN_LOCK = True
@@ -421,7 +432,6 @@ def login():
         good_login = True
         redirect_url = '/user&='+username
     if good_login:
-        session.permanent = True
         session['user'] = username
     else:
         flash ("Invalid Credentials!")
