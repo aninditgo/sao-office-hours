@@ -422,7 +422,7 @@ def login():
         good_login = True
         global OFFICE_SIGNIN_LOCK
         if OFFICE_SIGNIN_LOCK:
-            redirect_url = '/office'
+            redirect_url = '/'
         else :
             OFFICE_SIGNIN_LOCK = True
             redirect_url = '/office'
