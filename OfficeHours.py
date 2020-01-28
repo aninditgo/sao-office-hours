@@ -368,7 +368,7 @@ def edit_profile(username):
         radio_preferencebox_settings = [[['checked' if user_selection == selection  else '' for selection in radio_preferencebox_order] for user_selection in row_input] for row_input in cur_user.office_hour_input]
         radio_standing_order = [User.NEW_HIRE, User.CASEWORKER, User.VETERAN, User.INACTIVE]
         radio_standing = ['checked' if cur_user.standing == standing else '' for standing in radio_standing_order]
-        radio_division_order = [User.NOT_APPLICABLE, User.CONDUCT, User.GRIEVANCE, User.ACADEMIC, User.FIN_AID]
+        radio_division_order = [User.CONDUCT, User.GRIEVANCE, User.ACADEMIC, User.FIN_AID, User.NOT_APPLICABLE]
         radio_division = ['checked' if cur_user.division == division else '' for division in radio_division_order]
     
         return render_template('edit_profile.html', username=username, 
