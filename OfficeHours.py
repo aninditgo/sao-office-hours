@@ -424,7 +424,6 @@ def login():
         if OFFICE_SIGNIN_LOCK:
             flash("Sorry, it seems like another computer is tracking sign-ins. Sign out there first!")
             good_login = False
-            username=None
         else :
             OFFICE_SIGNIN_LOCK = True
             redirect_url = '/office'
