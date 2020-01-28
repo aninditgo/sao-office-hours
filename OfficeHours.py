@@ -289,7 +289,7 @@ def try_reset():
 
 @app.route('/user&=<username>')
 def user_page(username):
-    if (session.get('user') == username or session.get('user') == ADMIN_USERNAME) and and db.session.query(User).filter(User.username == username).count():
+    if (session.get('user') == username or session.get('user') == ADMIN_USERNAME) and db.session.query(User).filter(User.username == username).count():
         return render_template('user_page.html', username=username, num_required_hours=db.session.query(User).filter(User.username == username).one().num_required_hours, admin = session.get('user') == ADMIN_USERNAME)
     return automatic_logout()
 
