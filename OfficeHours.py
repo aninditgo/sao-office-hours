@@ -6,8 +6,8 @@ import csv
 
 app = Flask(__name__)
 app.secret_key = os.urandom(12)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
-app.config['SQLALCHEMY_ECHO'] = True
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
+#app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
 heroku = Heroku(app)
 db = SQLAlchemy(app)
