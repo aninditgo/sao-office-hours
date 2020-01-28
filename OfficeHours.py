@@ -9,6 +9,7 @@ app.secret_key = 'onedayiwillprogramandtherewontbebugs'
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
 #app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 heroku = Heroku(app)
 db = SQLAlchemy(app)
 
