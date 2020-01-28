@@ -120,6 +120,7 @@ class User(db.Model):
         self.division = User.NOT_APPLICABLE
         self.magic_key = User.DEFAULT_MAGIC_KEY
 
+db.drop_all()
 db.create_all()
 
 def clear_user_session():
