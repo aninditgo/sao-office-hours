@@ -24,13 +24,11 @@ Not yet registered? Reach out to Sophia, Era, or Anindit!</a>
 </form>
 </p>
 <p>
-{% with messages = get_flashed_messages() %}
    {% if messages %}
       {% for message in messages %}
         <font color="red"> {{ message }} </font>
       {% endfor %}
    {% endif %}
-{% endwith %}
 </p>
 </center>
 </body>

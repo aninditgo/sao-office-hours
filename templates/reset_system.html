@@ -24,13 +24,11 @@
         </form>
         </p>
         <p>
-        {% with messages = get_flashed_messages() %}
         {% if messages %}
             {% for message in messages %}
                 <font color="red"> {{ message }} </font>
             {% endfor %}
         {% endif %}
-        {% endwith %}
         </p>
         <p>
             <a href="/admin" style="color:blue">Back to Admin Panel</a><br/>

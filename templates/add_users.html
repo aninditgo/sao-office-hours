@@ -19,17 +19,15 @@
             </form>
         </p>
         <p>
-            {% with messages = get_flashed_messages() %}
-               {% if messages %}
-                  {% for message in messages %}
-                    {%if "Success"  in message%}
-                        <font color="green"> {{ message }} </font> <br>
-                    {% else %}
-                        <font color="red"> {{ message }} </font> <br>
-                    {% endif %}
-                  {% endfor %}
-               {% endif %}
-            {% endwith %}
+            {% if messages %}
+                {% for message in messages %}
+                {%if "Success"  in message%}
+                    <font color="green"> {{ message }} </font> <br>
+                {% else %}
+                    <font color="red"> {{ message }} </font> <br>
+                {% endif %}
+                {% endfor %}
+            {% endif %}
         </p>
         <center>
             <a href="/user_list" style="color:blue">View User List</a><br/>

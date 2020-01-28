@@ -64,7 +64,6 @@
         <p><input type="submit" value="Delete Selected Users" style="font-size:30px; width:200px"  onclick="return confirm('Are you sure you want to delete? Cannot be undone!!')"></input></p>
        </form>
        <p>
-            {% with messages = get_flashed_messages() %}
                {% if messages %}
                   {% for message in messages %}
                     {%if "Success"  in message%}
@@ -74,7 +73,6 @@
                     {% endif %}
                   {% endfor %}
                {% endif %}
-            {% endwith %}
         </p>
        <p>
         <a href="/add_users" style="color:blue">Add Users</a><br/>

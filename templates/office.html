@@ -33,7 +33,6 @@
             </form>
             </p>
             <p>
-                {% with messages = get_flashed_messages() %}
                 {% if messages %}
                     {% for message in messages %}
                         {% if 'Invalid' in message %}
@@ -44,7 +43,6 @@
 
                     {% endfor %}
                 {% endif %}
-                {% endwith %}
             </p>
             <p>
             <table>
