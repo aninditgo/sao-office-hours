@@ -52,7 +52,7 @@ flash_messages = Messages()
 
 class StatsCollection(db.Model):
     __tablename__ = "stats_collection"
-    singout_time = db.Column(db.Integer, primary_key = True)
+    signout_time = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(120))
     logged_time = db.Column(db.String(120))
     def __init__(self, username, signout_time, logged_time):
