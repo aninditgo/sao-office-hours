@@ -239,6 +239,7 @@ def user_list():
         db.session.rollback()
         user_list_for_html = []
         user_list_classform = db.session.query(User).all()
+        print (user_list_classform)
         for user in user_list_classform:
             num_unavailable_hours = 0
             for i in range (len (user.office_hour_input)):
