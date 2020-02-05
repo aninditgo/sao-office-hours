@@ -373,6 +373,7 @@ def edit_profile(username):
         radio_division = ['checked' if cur_user.division == division else '' for division in radio_division_order]
     
         return render_template('edit_profile.html', username=username, 
+                                                    num_slots_required = cur_user.required_slots,
                                                     header_oh_slots = HEADER_OH_SLOTS,
                                                     days_open = DAYS_OPEN,
                                                     radio_preferencebox_order=radio_preferencebox_order,

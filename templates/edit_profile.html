@@ -27,7 +27,7 @@
         <form action = "/try_editing_profile&={{ username }}"; method = "post"; id = "edits_to_profile">
             <b>Edit Office Hour Preferences</b><br>
             To make this easier for everyone, please only put "unavailable" for times you are really, truly unavailable (class, meetings, etc). The admin can see how many unavailable slots you put!<br>
-            Also, it's best if you put between n and n+2 preferred slots, where n is the number of <i>slots</i> you have to do<br>
+            Also, it's best if you put between {{ num_slots_required }} and {{ num_slots_required+2 }} preferred slots, where n is the number of <i>slots</i> you have to do<br>
             Be sure to press save changes when you are done. 
             <p>
                 <table id = "preference_table">
