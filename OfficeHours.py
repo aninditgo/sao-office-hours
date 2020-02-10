@@ -198,9 +198,23 @@ def kick_stragglers():
 
 
 @app.route('/assign_hours')
-def add_users():
+def assign_hours():
     if session.get('user') == ADMIN_USERNAME:
-        return render_template('assign_hours.html')
+        db.session.rollback()
+        user_list_for_html = []
+        user_list_classform = db.session.query(User).all()
+        slot_availibility = [[ [[],[]] for _ in HEADER_OH_SLOTS] for _ in DAYS_OPEN]
+        for user in user_list_classform:
+            for i in range (len(DAYS_OPEN)):
+                for j in range (len(HEADER_OH_SLOTS)):
+                    if user.office_hour_input[i][j] == User.PREFERRED:
+                        slot_availibility[i][j][0].append(user.username)
+                    elif user.office_hour_input[i][j] == User.AVAILABLE:
+                        slot_availibility[i][j][1].append(user.username)
+
+        return render_template('assign_hours.html', header_oh_slots = HEADER_OH_SLOTS,
+                                                    days_open = DAYS_OPEN,
+                                                    slot_availibility=slot_availibility)
     else:
         return automatic_logout()
     
@@ -245,7 +259,6 @@ def user_list():
         db.session.rollback()
         user_list_for_html = []
         user_list_classform = db.session.query(User).all()
-        print (user_list_classform)
         for user in user_list_classform:
             num_unavailable_hours = 0
             for i in range (len (user.office_hour_input)):
