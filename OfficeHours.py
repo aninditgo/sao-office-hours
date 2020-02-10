@@ -197,10 +197,16 @@ def kick_stragglers():
     return redirect('/office')
 
 
+@app.route('/assign_hours')
+def add_users():
+    if session.get('user') == ADMIN_USERNAME:
+        return render_template('assign_hours.html')
+    else:
+        return automatic_logout()
     
 @app.route('/add_users')
 def add_users():
-    if session.get('user') == ADMIN_USERNAME or True:
+    if session.get('user') == ADMIN_USERNAME:
         return render_template('add_users.html')
     else:
         return automatic_logout()
