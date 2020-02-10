@@ -6,10 +6,10 @@ import csv
 
 app = Flask(__name__)
 app.secret_key = 'thishasbeenanafternoonofdoddingnothing'
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/aninditgo'
-#app.config['SQLALCHEMY_ECHO'] = True
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/local_copy'
+app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
-heroku = Heroku(app)
+#heroku = Heroku(app)
 db = SQLAlchemy(app)
 
 
@@ -205,12 +205,13 @@ def assign_hours():
         user_list_classform = db.session.query(User).all()
         slot_availibility = [[ [[],[]] for _ in HEADER_OH_SLOTS] for _ in DAYS_OPEN]
         for user in user_list_classform:
-            for i in range (len(DAYS_OPEN)):
-                for j in range (len(HEADER_OH_SLOTS)):
-                    if user.office_hour_input[i][j] == User.PREFERRED:
-                        slot_availibility[i][j][0].append(user.username)
-                    elif user.office_hour_input[i][j] == User.AVAILABLE:
-                        slot_availibility[i][j][1].append(user.username)
+            if user.standing != User.INACTIVE:
+                for i in range (len(DAYS_OPEN)):
+                    for j in range (len(HEADER_OH_SLOTS)):
+                        if user.office_hour_input[i][j] == User.PREFERRED:
+                            slot_availibility[i][j][0].append(user.username)
+                        elif user.office_hour_input[i][j] == User.AVAILABLE:
+                            slot_availibility[i][j][1].append(user.username)
 
         return render_template('assign_hours.html', header_oh_slots = HEADER_OH_SLOTS,
                                                     days_open = DAYS_OPEN,
