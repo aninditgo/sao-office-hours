@@ -10,32 +10,52 @@
             table, th, td {
               border: 1px solid black;
               padding: 2px;
+              font-size: 11px
+            }
+            th {
+                width: 80px;
             }
             </style>
     <body>
         <center>
         <h2>Assign Office Hours</h2>
         </center>
-        The constraints the algorithm is working under are <br/>
-        1) Each person must do their required number of hours<br/>
-        2) For any given slot, there should be at least 3 people but no more than 5. The algorithm will try to maximize slots with 4 assigned people.<br/>
-        3) There should be at least 2 people of caseworker/veteran rank in each slot.<br/>
-        4) Veteran caseworkers get slight priority in preferences - namely, the algorithm thinks it is better that 3 veteran caseworkers get their preferred slots, vs 4 caseworkers/new hires<br/> <br/>
-        
-        Pressing "Generate Solution, Hard Constraints" will try to stick strongly to the constraints. It is possible that no solution exists, in which case the program will tell you this. <br/>
-        In the event of there being no solution, you can press "Generate Solution, Soft Constraints" to generate a solution that satisfies as many constraints as possible, from where you can manually edit it. 
-        
-        <form action="/solve_preferences_hard">
-            <input type="submit" value="Generate Solution, Hard Constraints" />
-        </form>
-        <form action="/solve_preferences_soft">
-            <input type="submit" value="Generate Solution, Soft Constraints" />
+        <p>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        {%if "Success"  in message%}
+                            <font color="green"> {{ message }} </font> <br>
+                        {% else %}
+                            <font color="red"> {{ message }} </font> <br>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+            </p>
+        <b>The current constraints the algorithm is working under are: </b>
+        <p>
+            <form action="/try_updating_constraints" method = "post">            
+                1) Each person must do their required number of hours<br/>
+                2) For any given slot, there should be at least <textarea rows = '1' cols = '1' name="min_per_slot">{{ min_per_slot }}</textarea> people but no more than <textarea rows = '1' cols = '1' name="max_per_slot">{{ max_per_slot }}</textarea>.<br/>
+                3) There should be at least <textarea rows = '1' cols = '1' name="min_experienced_per_slot">{{ min_experienced_per_slot }}</textarea> people of caseworker/veteran rank in each slot.<br/>
+                4) The algorithm will ensure that people with less than <textarea rows = '1' cols = '1' name="available_slots_threshold">{{ available_slots_threshold }}</textarea> available slots will not have any 30 minute shifts. <br/>
+                5) The algorithm will run for <textarea rows = '1' cols = '1' name="timeout_seconds">{{ timeout_seconds }}</textarea> seconds before giving up.<br/>
+                <i>6) Not a strict constraint, but veteran caseworkers get a slight priority in preferences. Namely, it is equivalent if <textarea rows = '1' cols = '1' name="weight_veteran">{{ weight_veteran }}</textarea> veterans and <textarea rows = '1' cols = '1' name="weight_normal">{{ weight_normal }}</textarea> non-veterans get their preferences.</i><br/>
+                <input type="submit" value="Update Constraints" />
+            </form>
+        </p>
+        "Generate Possible Solution" will fill the boxes with one proposed solution. However, it is possible that all the constraints cannot be met! <br/>
+        In this case, you should try relaxing the constraints above to generate a possible solution, or yell at the office to give you more available times! <br/>
+        <b>Note: this button only generates a possible solution. In order to actually assign the hours, you have to press the "Make Assignments" below. </b> 
+        <form action="/try_finding_solution" method = "post">
+            <input type="submit" value="Generate Possible Solution" />
         </form>
         <br/><br/>
         You can manually edit the office hour assignments. Don't worry about capitalization or spacing, but be sure to write users in a slot like so:<br/>
-        user1, user2, user3<br/>
+        user1, user2, user3,<br/>
         The form will tell you if there are formatting errors. You can see who is free for any given slot in the chart below (green text implies its a preferred slot).<br/>
-        Once you are done, press Make Assignments.
+        Once you are done, <b>press Make Assignments</b>.
         <form action = "/try_assigning_hours"; method = "post"; id = "assign_hours">
             <p>
                 <b>Current Assignments</b>
@@ -51,13 +71,14 @@
                         <th>{{ days_open[i] }}</th>
                         {% for j in range (header_oh_slots|length) %}
                         <td id = "{{ i }}-{{ j }}">
-                            <textarea rows="6" cols="8" name="{{ i }}-{{ j }} text">Anindit, Era, Sophia, Joyce</textarea>
+                            <textarea rows="6" cols="9" name="{{ i }}-{{ j }}">{% for username in generated_solution[i][j] %}{{ username }}, {% endfor %}
+                            </textarea>
                         </td>
                         {% endfor %}
                     </tr>
                     {% endfor %}    
                 </table>
-                <input type="submit" value="Make Assignments" />
+                <input type="submit" value="Make Assignments" style="font-size:30px; width:200px"/>
             </p>
         </form>    	
         <p>
@@ -86,20 +107,6 @@
                 </tr>
                 {% endfor %}    
             </table>
-            <input type="submit" value="Make Assignments" />
-        </p>
-        <p>
-            {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    {%if "Success"  in message%}
-                        <font color="green"> {{ message }} </font> <br>
-                    {% else %}
-                        <font color="red"> {{ message }} </font> <br>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-            {% endwith %}
         </p>
         <center>
         <p>

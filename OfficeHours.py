@@ -2,12 +2,13 @@ import os, datetime, string
 from flask import Flask, render_template, request, redirect, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_heroku import Heroku
+from ortools.sat.python import cp_model
 import csv
 
 app = Flask(__name__)
 app.secret_key = 'thishasbeenanafternoonofdoddingnothing'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/local_copy'
-app.config['SQLALCHEMY_ECHO'] = True
+#app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
 #heroku = Heroku(app)
 db = SQLAlchemy(app)
@@ -27,6 +28,15 @@ cur_time = START_HOUR
 while (cur_time < END_HOUR):
     HEADER_OH_SLOTS.append(time_to_readable(cur_time) +"-" +time_to_readable(cur_time+SLOT_DURATION_HOURS))
     cur_time+=SLOT_DURATION_HOURS
+
+TOTAL_SLOTS = len(HEADER_OH_SLOTS) * len(DAYS_OPEN)
+MIN_PER_SLOT = 3
+MAX_PER_SLOT = 6
+MIN_EXPERIENCED_PER_SLOT = 2
+WEIGHT_VETERAN = 6
+WEIGHT_NORMAL = 7
+TIMEOUT_SECONDS = 30
+AVAILABLE_SLOTS_THRESHOLD = 50
             
 USER_LIST_TABLE_HEADINGS = ['Username', 'Password', 'Division', 'Standing', '# Unavail. Hours', '# Required Hours', 'Assigned Hours', 'Magic Key?']
 
@@ -37,6 +47,7 @@ OFFICE_USERNAME = 'office'
 OFFICE_PASSWORD = 'sp1ndoctor'
 
 OFFICE_SIGNIN_LOCK = False
+serverside_session = {}
 
 class StatsCollection(db.Model):
     __tablename__ = "stats_collection"
@@ -201,23 +212,165 @@ def kick_stragglers():
 def assign_hours():
     if session.get('user') == ADMIN_USERNAME:
         db.session.rollback()
-        user_list_for_html = []
         user_list_classform = db.session.query(User).all()
         slot_availibility = [[ [[],[]] for _ in HEADER_OH_SLOTS] for _ in DAYS_OPEN]
-        for user in user_list_classform:
+        currently_assigned_hours = [[[] for _ in range (len(HEADER_OH_SLOTS))] for _ in range (len(DAYS_OPEN))]
+        for user in user_list_classform: 
             if user.standing != User.INACTIVE:
+                if sum(user.assigned_office_hours) != -1 * len(user.assigned_office_hours):
+                    for assigned_hour in user.assigned_office_hours:
+                        currently_assigned_hours[assigned_hour//len(HEADER_OH_SLOTS)][assigned_hour%len(HEADER_OH_SLOTS)].append(user.username)
                 for i in range (len(DAYS_OPEN)):
                     for j in range (len(HEADER_OH_SLOTS)):
                         if user.office_hour_input[i][j] == User.PREFERRED:
                             slot_availibility[i][j][0].append(user.username)
                         elif user.office_hour_input[i][j] == User.AVAILABLE:
                             slot_availibility[i][j][1].append(user.username)
+        generated_solution = serverside_session.pop('generated_solution', None)
+        
+        if not generated_solution:
+            generated_solution = currently_assigned_hours
+            
 
         return render_template('assign_hours.html', header_oh_slots = HEADER_OH_SLOTS,
                                                     days_open = DAYS_OPEN,
-                                                    slot_availibility=slot_availibility)
+                                                    slot_availibility=slot_availibility,
+                                                    min_per_slot = MIN_PER_SLOT,
+                                                    max_per_slot = MAX_PER_SLOT,
+                                                    timeout_seconds = TIMEOUT_SECONDS,
+                                                    weight_normal = WEIGHT_NORMAL,
+                                                    weight_veteran = WEIGHT_VETERAN,
+                                                    min_experienced_per_slot = MIN_EXPERIENCED_PER_SLOT,
+                                                    available_slots_threshold = AVAILABLE_SLOTS_THRESHOLD,
+                                                    generated_solution = generated_solution)
     else:
         return automatic_logout()
+
+@app.route('/try_updating_constraints', methods = ['POST'])
+def try_updating_constraints():
+    if session.get('user') == ADMIN_USERNAME:
+        global MIN_PER_SLOT
+        MIN_PER_SLOT = int(request.form['min_per_slot'].strip())
+        global MAX_PER_SLOT
+        MAX_PER_SLOT = int(request.form['max_per_slot'].strip())
+        global MIN_EXPERIENCED_PER_SLOT
+        MIN_EXPERIENCED_PER_SLOT = int(request.form['min_experienced_per_slot'].strip())
+        global WEIGHT_VETERAN
+        WEIGHT_VETERAN = int(request.form['weight_veteran'].strip())
+        global WEIGHT_NORMAL
+        WEIGHT_NORMAL = int(request.form['weight_normal'].strip())
+        global TIMEOUT_SECONDS
+        TIMEOUT_SECONDS = int(request.form['timeout_seconds'].strip())
+        flash("Successfully Updated Constraints")
+        global AVAILABLE_SLOTS_THRESHOLD
+        AVAILABLE_SLOTS_THRESHOLD = int(request.form['available_slots_threshold'].strip())
+        return redirect('/assign_hours')
+    return automatic_logout()
+
+@app.route('/try_assigning_hours', methods = ['POST'])
+def try_assigning_hours():
+    if session.get('user') == ADMIN_USERNAME:
+        db.session.rollback()
+        user_list_classform = db.session.query(User).all()
+        username_list = set({})
+        for user in user_list_classform:
+            username_list.add(user.username)
+        print(username_list)
+
+        generated_solution = [[[] for _ in range (len(HEADER_OH_SLOTS))] for _ in range (len(DAYS_OPEN))]
+        for i in range (len(DAYS_OPEN)):
+            for j in range (len (HEADER_OH_SLOTS)):
+                prelim = request.form[str(i)+'-'+str(j)].strip().split(',')
+                generated_solution[i][j] = [username.strip() for username in prelim if username]
+        serverside_session['generated_solution'] = generated_solution     
+
+        assigned_hours_dictionary = {}
+        for i in range (len(DAYS_OPEN)):
+            for j in range (len(HEADER_OH_SLOTS)):
+                for username in generated_solution[i][j]:
+                    if username in username_list:
+                        if username not in assigned_hours_dictionary:
+                            assigned_hours_dictionary[username] = []
+                        assigned_hours_dictionary[username].append(i*len(HEADER_OH_SLOTS) + j)
+                    else:
+                        flash ("There was a formatting error in the " + str(i) + ", " + str(j) + " cell. " + username + " is not a valid username")
+                        return redirect('/assign_hours')
+        for user in user_list_classform:
+            if user.username in assigned_hours_dictionary:
+                user.assigned_office_hours = assigned_hours_dictionary[user.username]
+        db.session.commit()
+        flash ("Succesfully wrote assignments to the database")
+        return redirect('/assign_hours')
+    return automatic_logout()
+    
+
+@app.route('/try_finding_solution', methods = ['POST'])
+def solve_hard_constraints():
+    def helper_find_num_unavailibe_hours(office_hour_input):
+        num_unavailable_hours = 0
+        for i in range (len (office_hour_input)):
+            for j in range (len (office_hour_input[i])):
+                if office_hour_input[i][j] == User.UNAVAILABLE:
+                    num_unavailable_hours+=1
+        return num_unavailable_hours
+    if session.get('user') == ADMIN_USERNAME:
+        model = cp_model.CpModel()
+
+        db.session.rollback()
+        user_list_classform = db.session.query(User).all()          
+        user_variable_lists = [[(model.NewBoolVar('%s-%d' % (user.username, i)), user.office_hour_input[i//len(HEADER_OH_SLOTS)][i%len(HEADER_OH_SLOTS)]) 
+                                    for i in range (TOTAL_SLOTS)] + [helper_find_num_unavailibe_hours(user.office_hour_input), user.username, user.standing, user.required_slots]
+                                    for user in user_list_classform 
+                                    if user.standing != User.INACTIVE]
+       
+        for i in range (TOTAL_SLOTS):
+            model.Add(sum([user_variable_list[i][0] for user_variable_list in user_variable_lists]) >= MIN_PER_SLOT)
+            model.Add(sum([user_variable_list[i][0] for user_variable_list in user_variable_lists]) <= MAX_PER_SLOT)
+            model.Add(sum([user_variable_list[i][0] for user_variable_list in user_variable_lists if user_variable_list[-2] != User.NEW_HIRE]) >= MIN_EXPERIENCED_PER_SLOT)
+        
+        for user_variable_list in user_variable_lists:
+            if user_variable_list[-4] < AVAILABLE_SLOTS_THRESHOLD:
+                for i in range (len(DAYS_OPEN)):
+                    flattened_index_base = i*len(HEADER_OH_SLOTS)
+                    print (user_variable_list[-3])
+                    model.Add(user_variable_list[flattened_index_base][0] <= user_variable_list[flattened_index_base+1][0])
+                    model.Add(user_variable_list[flattened_index_base+len(HEADER_OH_SLOTS)-1][0] <= user_variable_list[flattened_index_base+len(HEADER_OH_SLOTS)-2][0])
+                    for j in range (1,len(HEADER_OH_SLOTS)-1):
+                        cur_index = flattened_index_base + j
+                        model.Add(user_variable_list[cur_index][0] <= user_variable_list[cur_index-1][0] + user_variable_list[cur_index+1][0])
+                
+
+
+        for user_variable_list in user_variable_lists:
+            model.Add(sum([user_variable_list[i][0] for i in range(TOTAL_SLOTS)]) == user_variable_list[-1])
+            for i in range(TOTAL_SLOTS):
+                if user_variable_list[i][1] == User.UNAVAILABLE:
+                    model.Add(user_variable_list[i][0] == 0)
+        
+        equation = 0
+        for user_variable_list in user_variable_lists:
+            weight = WEIGHT_VETERAN if user_variable_list[-2] == User.VETERAN else WEIGHT_NORMAL
+            for i in range (TOTAL_SLOTS):
+                if user_variable_list[i][1] == User.PREFERRED:
+                    equation += weight*user_variable_list[i][0]
+        model.Minimize(equation)
+        solver = cp_model.CpSolver()
+        solver.parameters.max_time_in_seconds = TIMEOUT_SECONDS
+        status = solver.Solve(model)
+        
+        if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+            generated_solution = [[[] for _ in range (len(HEADER_OH_SLOTS))] for _ in range (len(DAYS_OPEN))]
+
+            for user_variable_list in user_variable_lists:
+                for i in range (TOTAL_SLOTS):
+                    if solver.Value(user_variable_list[i][0])==1:
+                        generated_solution[i//len(HEADER_OH_SLOTS)][i%len(HEADER_OH_SLOTS)].append(user_variable_list[-3])
+            serverside_session['generated_solution'] = generated_solution     
+
+        else: 
+            flash ("There was no valid solution - try relaxing the constraints!")
+        return redirect('/assign_hours')
+    return automatic_logout()
     
 @app.route('/add_users')
 def add_users():
@@ -308,10 +461,18 @@ def try_reset():
         return redirect('/reset_system')
     return automatic_logout()
 
+
 @app.route('/user&=<username>')
 def user_page(username):
     if (session.get('user') == username or session.get('user') == ADMIN_USERNAME) and db.session.query(User).filter(User.username == username).count():
-        return render_template('user_page.html', username=username, num_required_hours=db.session.query(User).filter(User.username == username).one().required_slots*SLOT_DURATION_HOURS, admin = session.get('user') == ADMIN_USERNAME)
+        cur_user = db.session.query(User).filter(User.username == username).one()
+        assigned_shifts = []
+        if sum(cur_user.assigned_office_hours) > 0:
+            start, last = -1, -1
+            for assigned_slot in cur_user.assigned_office_hours:
+                assigned_shifts.append(DAYS_OPEN[assigned_slot//len(HEADER_OH_SLOTS)] + ": " + time_to_readable(START_HOUR + (assigned_slot%len(HEADER_OH_SLOTS)) * SLOT_DURATION_HOURS) + '-' + time_to_readable(START_HOUR + (assigned_slot%len(HEADER_OH_SLOTS)+1) * SLOT_DURATION_HOURS))
+
+        return render_template('user_page.html', username=username, num_required_hours=cur_user.required_slots*SLOT_DURATION_HOURS, admin = session.get('user') == ADMIN_USERNAME, assigned_shifts=assigned_shifts)
     return automatic_logout()
 
 @app.route('/change_password&=<username>')
@@ -429,7 +590,6 @@ def home():
         return render_template('login_form.html')
     else:
         return render_template('office_logged_in.html')
-
 
 @app.route('/login', methods=['POST'])
 def login():

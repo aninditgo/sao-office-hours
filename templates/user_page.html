@@ -8,6 +8,14 @@
             <h3>Hi {{ username }}!</h3>
             <p>You will have <b>{{ num_required_hours }}</b> office hours to do. If you think this is a mistake, tell Sophia!</p>
             <p>
+            {% if assigned_shifts %}
+            Assigned Shifts: <br/>
+            {% for assigned_shift in assigned_shifts %}
+                {{ assigned_shift }}<br/>
+            {% endfor %}
+            {% endif %}
+            </p>
+            <p>
                 <a href="/change_password&={{ username }}" style="color:blue""> Change Password</a> <br/>
                 <a href="/edit_profile&={{ username }}" style="color:blue">Edit Profile</a><br/>
                 <a href="/set_magic_key&={{ username }}" style="color:blue">Set Magic Key</a><br/>
