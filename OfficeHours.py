@@ -7,10 +7,10 @@ import csv
 
 app = Flask(__name__)
 app.secret_key = 'thishasbeenanafternoonofdoddingnothing'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/local_copy'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/local_copy'
 #app.config['SQLALCHEMY_ECHO'] = True
 app.permanent_session_lifetime = datetime.timedelta(days=365)
-#heroku = Heroku(app)
+heroku = Heroku(app)
 db = SQLAlchemy(app)
 
 
@@ -30,13 +30,13 @@ while (cur_time < END_HOUR):
     cur_time+=SLOT_DURATION_HOURS
 
 TOTAL_SLOTS = len(HEADER_OH_SLOTS) * len(DAYS_OPEN)
-MIN_PER_SLOT = 3
+MIN_PER_SLOT = 4
 MAX_PER_SLOT = 6
 MIN_EXPERIENCED_PER_SLOT = 2
 WEIGHT_VETERAN = 6
 WEIGHT_NORMAL = 7
 TIMEOUT_SECONDS = 30
-AVAILABLE_SLOTS_THRESHOLD = 50
+AVAILABLE_SLOTS_THRESHOLD = 45
             
 USER_LIST_TABLE_HEADINGS = ['Username', 'Password', 'Division', 'Standing', '# Unavail. Hours', '# Required Hours', 'Assigned Hours', 'Magic Key?']
 
